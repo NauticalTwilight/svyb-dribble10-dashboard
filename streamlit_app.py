@@ -239,24 +239,30 @@ for row_start in (0, 3):
         with col:
             render_grade_board(grade, public_data)
 
-st.markdown('<div class="section-heading">Grade-vs-grade race</div>', unsafe_allow_html=True)
-st.caption("Cumulative parent-confirmed workouts by grade. These totals include sessions from families who chose not to show a player name.")
+st.markdown('<div class="section-heading">🏆 Grade-vs-grade race</div>', unsafe_allow_html=True)
+st.caption("See how the grades stack up. Bars compare each grade’s completed workouts with the current leader; all parent-confirmed sessions count, including private entries.")
 max_grade_total = int(grade_totals.max()) if len(grade_totals) else 0
 ranked_grades = sorted(GRADE_ORDER, key=lambda grade: (-int(grade_totals[grade]), GRADE_ORDER.index(grade)))
-for row_start in (0, 3):
-    cols = st.columns(3, gap="medium")
-    for position, (col, grade) in enumerate(zip(cols, ranked_grades[row_start:row_start + 3]), start=row_start + 1):
-        total = int(grade_totals[grade])
-        width = int(total / max_grade_total * 100) if max_grade_total else 0
-        leading = max_grade_total > 0 and total == max_grade_total
-        leader_badge = '<span class="grade-leader">🏆 GRADE LEADER</span>' if leading else f'<span class="grade-leader">#{position}</span>'
-        with col:
-            st.markdown(
-                f'<div class="grade-race-card"><div class="grade-race-top"><span>{html.escape(grade)}</span>{leader_badge}</div>'
-                f'<div class="grade-race-score">{total:,} workouts</div>'
-                f'<div class="grade-race-bar"><div class="grade-race-fill" style="width:{width}%"></div></div></div>',
-                unsafe_allow_html=True,
-            )
+race_rows = []
+for position, grade in enumerate(ranked_grades, start=1):
+    total = int(grade_totals[grade])
+    width = int(total / max_grade_total * 100) if max_grade_total else 0
+    is_leader = position == 1 and total > 0
+    rank_label = "🏆" if is_leader else str(position)
+    row_background = "#fff2f0" if is_leader else "#ffffff"
+    row_border = "#c8202f" if is_leader else "#e2e5ea"
+    leader_tag = '<span style="color:#a61b27;background:#ffe1df;border-radius:20px;padding:3px 8px;font-size:11px;font-weight:900;letter-spacing:.04em">IN THE LEAD</span>' if is_leader else ""
+    race_rows.append(
+        f'<div style="background:{row_background};border:1px solid {row_border};border-left:5px solid {row_border};border-radius:12px;padding:11px 13px;margin:8px 0">'
+        f'<div style="display:flex;align-items:center;gap:10px;min-width:0">'
+        f'<span style="width:29px;height:29px;flex:0 0 29px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:{"#c8202f" if is_leader else "#edf0f4"};color:{"#ffffff" if is_leader else "#30343d"};font-weight:900;font-size:13px">{rank_label}</span>'
+        f'<span style="flex:1;min-width:0;color:#20232b;font-size:16px;font-weight:900">{html.escape(grade)}</span>'
+        f'{leader_tag}<span style="color:#c8202f;font-weight:900;white-space:nowrap">{total:,} <span style="font-size:12px;color:#454a53">workouts</span></span>'
+        f'</div><div style="height:8px;background:#edf0f4;border-radius:8px;margin:10px 0 0 39px;overflow:hidden">'
+        f'<div style="height:100%;width:{width}%;background:linear-gradient(90deg,#c8202f,#f05a36);border-radius:8px"></div></div></div>'
+    )
+st.markdown('<div style="max-width:850px">' + "".join(race_rows) + "</div>", unsafe_allow_html=True)
+
 
 st.markdown('<div class="section-heading">Community activity by day</div>', unsafe_allow_html=True)
 if not data.empty:
