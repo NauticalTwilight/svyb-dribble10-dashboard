@@ -4,6 +4,7 @@ import re
 
 import pandas as pd
 import streamlit as st
+import altair as alt
 
 st.set_page_config(page_title="SVYB Dribble 10", page_icon="🏀", layout="wide")
 
@@ -17,7 +18,7 @@ COLUMN_ALIASES = {
     "parent_confirmed": ["parent confirmed", "parent/guardian confirmed", "confirmed"],
     "show_public": ["show on public leaderboard", "public consent", "show publicly"],
 }
-COMMUNITY_GOAL = 1500
+COMMUNITY_GOAL = 1000
 
 
 def _yes(value) -> bool:
@@ -101,20 +102,20 @@ def _rank_icon(rank: int) -> str:
 def render_grade_board(grade: str, public_data: pd.DataFrame):
     grade_data = public_data[public_data["grade"] == grade]
     total_grade_sessions = int(grade_totals.get(grade, 0))
-    st.markdown(f'<div class="grade-title">{html.escape(grade)} <span>{total_grade_sessions} TOTAL · TOP 10</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="grade-title">{html.escape(grade)} <span>{total_grade_sessions} TOTAL</span></div>', unsafe_allow_html=True)
     if grade_data.empty:
-        st.markdown('<div class="empty-board">Ready for the first player! 🏀</div>', unsafe_allow_html=True)
+        st.markdown('<div class="empty-board">No players have opted into name display yet. Their sessions still count toward the grade total. 🏀</div>', unsafe_allow_html=True)
         return
 
     players = (grade_data.groupby("display_name", as_index=False)
                .agg(Total=("sessions", "sum"), Latest=("session_date", "max"))
-               .sort_values(["Total", "Latest", "display_name"], ascending=[False, False, True])
-               .head(10))
+               .sort_values(["Total", "Latest", "display_name"], ascending=[False, False, True]))
     players["Rank"] = players["Total"].rank(method="min", ascending=False).astype(int)
     rows = []
     for player in players.itertuples(index=False):
         rank = int(player.Rank)
         total = int(player.Total)
+        tickets = total // 5
         name = html.escape(str(player.display_name))
         # One basketball for every completed session. Keep the count alongside the icons for clarity.
         ball_count = min(total, 15)
@@ -125,7 +126,8 @@ def render_grade_board(grade: str, public_data: pd.DataFrame):
             f'<div class="player-top"><span class="rank">{_rank_icon(rank)}</span>'
             f'<span class="player-name">{name}</span><span class="session-count">{total} session{"s" if total != 1 else ""}</span></div>'
             f'<div class="player-bottom"><span class="balls" aria-label="{total} completed sessions">{balls}{overflow}</span>'
-            f'<span class="badges">{_milestone_badges(total)}</span></div></div>'
+            f'<span class="player-rewards"><span class="ticket" title="One raffle ticket for every five workouts">🎟️ {tickets}</span>'
+            f'<span class="badges">{_milestone_badges(total)}</span></span></div></div>'
         )
     st.markdown('<div class="leaderboard">' + "".join(rows) + "</div>", unsafe_allow_html=True)
 
@@ -133,11 +135,15 @@ def render_grade_board(grade: str, public_data: pd.DataFrame):
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap');
-.stApp { background: #f3f5f8; }
+.stApp { background: #f3f5f8; color-scheme:light; }
 html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
+.stApp, .stApp p, .stApp label, .stApp [data-testid="stMarkdownContainer"], .stApp [data-testid="stCaptionContainer"], .stApp [data-testid="stMetricLabel"], .stApp [data-testid="stMetricValue"], .stApp [data-testid="stMetricDelta"] { color:#17191f !important; }
+.stApp [data-testid="stCaptionContainer"] p { color:#383c45 !important; }
+.stApp [data-testid="stMetricLabel"] *, .stApp [data-testid="stMetricValue"] * { color:#17191f !important; }
+.stApp h1, .stApp h2, .stApp h3 { color:#17191f !important; }
 .hero { background: linear-gradient(115deg,#17191f 0%,#292d35 65%,#c8202f 100%); color:white; padding:24px 30px; border-radius:18px; margin:0 0 16px; box-shadow:0 8px 24px #13172122; }
-.hero h1 { font-size:2.35rem; margin:0; color:white; font-weight:900; }
-.hero p { margin:5px 0 0; color:#f4f4f4; font-size:1rem; }
+.hero h1 { font-size:2.35rem; margin:0; color:white !important; font-weight:900; }
+.hero p { margin:5px 0 0; color:#fff !important; font-size:1rem; }
 .section-heading { font-size:1.45rem; font-weight:900; color:#20232b; margin:20px 0 4px; }
 .grade-title { font-weight:900; font-size:1.15rem; color:#fff; background:#22252d; border-radius:12px 12px 0 0; padding:12px 14px; margin-top:10px; }
 .grade-title span { float:right; color:#ffc928; font-size:.7rem; letter-spacing:.1em; padding-top:5px; }
@@ -156,6 +162,8 @@ html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
 .player-name { font-weight:800; color:#20232b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
 .session-count { color:#727781; font-size:.73rem; font-weight:700; white-space:nowrap; }
 .player-bottom { padding-left:32px; display:flex; justify-content:space-between; align-items:center; gap:4px; min-height:20px; }
+.player-rewards { display:flex; flex-wrap:wrap; gap:3px; justify-content:flex-end; align-items:center; }
+.ticket { color:#642600; background:#ffe9d8; font-size:.64rem; padding:2px 5px; border-radius:9px; font-weight:900; white-space:nowrap; }
 .balls { font-size:.73rem; letter-spacing:-2px; white-space:nowrap; }
 .more-balls { font-size:.72rem; letter-spacing:0; color:#6d727c; font-weight:800; margin-left:4px; }
 .badges { display:flex; gap:3px; justify-content:flex-end; }
@@ -164,6 +172,10 @@ html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
 .badge-star { background:#fff7cc; color:#725400; }
 .badge-trophy { background:#e9f0ff; color:#244a9a; }
 .stMetric { background:white; border:1px solid #e4e6eb; border-radius:14px; padding:12px; }
+.community-ladder { display:flex; flex-wrap:wrap; gap:6px; margin:5px 0 10px; }
+.mile { border-radius:14px; padding:5px 9px; font-size:.77rem; font-weight:900; color:#545b66; background:#e3e6ec; }
+.mile.hit { color:#fff; background:#187143; }
+.mile.next { color:#fff; background:#c8202f; box-shadow:0 0 0 2px #ffc928; }
 @media(max-width:760px) { .hero h1 {font-size:1.8rem;} .player-name {font-size:.86rem;} .session-count {font-size:.65rem;} }
 </style>
 """, unsafe_allow_html=True)
@@ -208,7 +220,25 @@ m3.metric("⭐ Players on leaderboard", f"{public_players:,}")
 progress = min(sessions / COMMUNITY_GOAL, 1.0)
 st.markdown(f'<div class="section-heading">SVYB community goal <span style="color:#c8202f">{sessions:,} / {COMMUNITY_GOAL:,} workouts</span></div>', unsafe_allow_html=True)
 st.progress(progress, text=f"{progress:.0%} of the way to {COMMUNITY_GOAL:,} workouts")
+next_milestone = min(((sessions // 100) + 1) * 100, COMMUNITY_GOAL)
+milestone_note = "🎉 1,000-workout goal reached!" if sessions >= COMMUNITY_GOAL else f"Next team milestone: {next_milestone:,} workouts"
+st.markdown(f"**{milestone_note}**", unsafe_allow_html=False)
+milestone_html = []
+for milestone in range(100, COMMUNITY_GOAL + 1, 100):
+    css_class = "mile hit" if sessions >= milestone else ("mile next" if milestone == next_milestone else "mile")
+    marker = "✓ " if sessions >= milestone else ""
+    milestone_html.append(f'<span class="{css_class}">{marker}{milestone:,}</span>')
+st.markdown('<div class="community-ladder">' + "".join(milestone_html) + "</div>", unsafe_allow_html=True)
 st.caption("Players appear by display name only when their family has opted in. Every parent-confirmed 10-minute session counts toward the team goal.")
+
+st.markdown('<div class="section-heading">Grade leaderboards</div>', unsafe_allow_html=True)
+st.caption("Every opted-in player is listed, ranked by completed workouts. Each 🏀 represents one session. Players earn one raffle ticket for every five workouts, shown beside their name.")
+st.caption("Milestone badges unlock at 5, 10, and 15 sessions. Players whose families did not opt in to public display still count toward grade and community totals and remain eligible for the drawing.")
+for row_start in (0, 3):
+    cols = st.columns(3, gap="medium")
+    for col, grade in zip(cols, GRADE_ORDER[row_start:row_start + 3]):
+        with col:
+            render_grade_board(grade, public_data)
 
 st.markdown('<div class="section-heading">Grade-vs-grade race</div>', unsafe_allow_html=True)
 st.caption("Cumulative parent-confirmed workouts by grade. These totals include sessions from families who chose not to show a player name.")
@@ -229,17 +259,22 @@ for row_start in (0, 3):
                 unsafe_allow_html=True,
             )
 
-st.markdown('<div class="section-heading">Grade leaderboards</div>', unsafe_allow_html=True)
-st.caption("Top 10 players in each grade, ranked by completed sessions. Each 🏀 represents one session; milestone badges unlock at 5, 10, and 15 sessions.")
-for row_start in (0, 3):
-    cols = st.columns(3, gap="medium")
-    for col, grade in zip(cols, GRADE_ORDER[row_start:row_start + 3]):
-        with col:
-            render_grade_board(grade, public_data)
-
+st.markdown('<div class="section-heading">Community activity by day</div>', unsafe_allow_html=True)
 if not data.empty:
-    with st.expander("Community activity by day"):
-        daily_counts = data.groupby("session_date").size().sort_index().rename("Workouts")
-        daily_counts.index = daily_counts.index.map(lambda d: d.strftime("%b %-d"))
-        st.line_chart(daily_counts, color="#c8202f")
+    daily_counts = data.groupby("session_date").size().reset_index(name="Workouts")
+    activity_chart = (
+        alt.Chart(daily_counts)
+        .mark_line(color="#c8202f", strokeWidth=4, point=alt.OverlayMarkDef(color="#c8202f", size=75, filled=True))
+        .encode(
+            x=alt.X("session_date:T", title=None, axis=alt.Axis(format="%b %-d", labelAngle=0, labelColor="#252831")),
+            y=alt.Y("Workouts:Q", title="Completed workouts", scale=alt.Scale(zero=True), axis=alt.Axis(tickMinStep=1, labelColor="#252831", titleColor="#252831")),
+            tooltip=[alt.Tooltip("session_date:T", title="Date"), alt.Tooltip("Workouts:Q", title="Workouts")],
+        )
+        .properties(height=300)
+        .configure_view(strokeOpacity=0)
+        .configure_axis(gridColor="#d9dde4", domainColor="#999fa9")
+    )
+    st.altair_chart(activity_chart, use_container_width=True)
+else:
+    st.info("Daily workout activity will appear here after the first session is logged.")
 st.caption("Dashboard refreshes from the published sheet about every 30 seconds. For a public display, use player nicknames or first name plus last initial and collect parent consent.")
