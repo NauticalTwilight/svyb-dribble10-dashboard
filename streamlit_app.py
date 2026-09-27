@@ -1,6 +1,7 @@
 import html
 import os
 import re
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -180,6 +181,18 @@ html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="hero"><h1>🏀 SVYB DRIBBLE 10</h1><p>Every session counts. Keep the ball moving and climb your grade leaderboard!</p></div>', unsafe_allow_html=True)
+
+workout_pdf_path = Path(__file__).with_name("svyb_dribble10_week1_handle_basics.pdf")
+st.markdown('<div class="section-heading">🏀 Start this week’s workout</div>', unsafe_allow_html=True)
+st.caption("Week 1: Handle Basics. Download the one-page guide with the 10-minute timer plan and all nine drills.")
+st.download_button(
+    label="Download Week 1 Workout (PDF)",
+    data=workout_pdf_path.read_bytes(),
+    file_name="SVYB_Dribble10_Week1_Handle_Basics.pdf",
+    mime="application/pdf",
+    type="primary",
+    use_container_width=True,
+)
 
 csv_url = st.secrets.get("dashboard_csv_url", os.getenv("DASHBOARD_CSV_URL", "")).strip()
 if not csv_url:
