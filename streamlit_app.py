@@ -4,7 +4,6 @@ import re
 
 import pandas as pd
 import streamlit as st
-import altair as alt
 
 st.set_page_config(page_title="SVYB Dribble 10", page_icon="🏀", layout="wide")
 
@@ -261,20 +260,8 @@ for row_start in (0, 3):
 
 st.markdown('<div class="section-heading">Community activity by day</div>', unsafe_allow_html=True)
 if not data.empty:
-    daily_counts = data.groupby("session_date").size().reset_index(name="Workouts")
-    activity_chart = (
-        alt.Chart(daily_counts)
-        .mark_line(color="#c8202f", strokeWidth=4, point=alt.OverlayMarkDef(color="#c8202f", size=75, filled=True))
-        .encode(
-            x=alt.X("session_date:T", title=None, axis=alt.Axis(format="%b %-d", labelAngle=0, labelColor="#252831")),
-            y=alt.Y("Workouts:Q", title="Completed workouts", scale=alt.Scale(zero=True), axis=alt.Axis(tickMinStep=1, labelColor="#252831", titleColor="#252831")),
-            tooltip=[alt.Tooltip("session_date:T", title="Date"), alt.Tooltip("Workouts:Q", title="Workouts")],
-        )
-        .properties(height=300)
-        .configure_view(strokeOpacity=0)
-        .configure_axis(gridColor="#d9dde4", domainColor="#999fa9")
-    )
-    st.altair_chart(activity_chart, use_container_width=True)
+    daily_counts = data.groupby("session_date").size().sort_index().to_frame("Workouts")
+    st.line_chart(daily_counts, x_label="Date", y_label="Completed workouts", color="#c8202f", height=300)
 else:
     st.info("Daily workout activity will appear here after the first session is logged.")
 st.caption("Dashboard refreshes from the published sheet about every 30 seconds. For a public display, use player nicknames or first name plus last initial and collect parent consent.")
