@@ -114,7 +114,7 @@ def render_grade_board(grade: str, public_data: pd.DataFrame):
     for player in players.itertuples(index=False):
         rank = int(player.Rank)
         total = int(player.Total)
-        tickets = total // 5
+        tickets = total // 3
         name = html.escape(str(player.display_name))
         # One basketball for every completed session. Keep the count alongside the icons for clarity.
         ball_count = min(total, 15)
@@ -125,7 +125,7 @@ def render_grade_board(grade: str, public_data: pd.DataFrame):
             f'<div class="player-top"><span class="rank">{_rank_icon(rank)}</span>'
             f'<span class="player-name">{name}</span><span class="session-count">{total} session{"s" if total != 1 else ""}</span></div>'
             f'<div class="player-bottom"><span class="balls" aria-label="{total} completed sessions">{balls}{overflow}</span>'
-            f'<span class="player-rewards"><span class="ticket" title="One raffle ticket for every five workouts">🎟️ {tickets}</span>'
+            f'<span class="player-rewards"><span class="ticket" title="One raffle ticket for every three workouts">🎟️ {tickets}</span>'
             f'<span class="badges">{_milestone_badges(total)}</span></span></div></div>'
         )
     st.markdown('<div class="leaderboard">' + "".join(rows) + "</div>", unsafe_allow_html=True)
@@ -213,8 +213,8 @@ public_players = public_data[["grade", "display_name"]].drop_duplicates().shape[
 grade_totals = data.groupby("grade").size().reindex(GRADE_ORDER, fill_value=0)
 
 m1, m2, m3 = st.columns(3)
-m1.metric("🏀 Team workouts", f"{sessions:,}")
-m2.metric("⏱️ Dribbling minutes", f"{minutes:,}")
+m1.metric("🏀 Total SVYB Workouts", f"{sessions:,}")
+m2.metric("⏱️ Total SVYB Dribbling Minutes", f"{minutes:,}")
 m3.metric("⭐ Players on leaderboard", f"{public_players:,}")
 progress = min(sessions / COMMUNITY_GOAL, 1.0)
 st.markdown(f'<div class="section-heading">SVYB community goal <span style="color:#c8202f">{sessions:,} / {COMMUNITY_GOAL:,} workouts</span></div>', unsafe_allow_html=True)
@@ -231,7 +231,7 @@ st.markdown('<div class="community-ladder">' + "".join(milestone_html) + "</div>
 st.caption("Players appear by display name only when their family has opted in. Every parent-confirmed 10-minute session counts toward the team goal.")
 
 st.markdown('<div class="section-heading">Grade leaderboards</div>', unsafe_allow_html=True)
-st.caption("Every opted-in player is listed, ranked by completed workouts. Each 🏀 represents one session. Players earn one raffle ticket for every five workouts, shown beside their name.")
+st.caption("Every opted-in player is listed, ranked by completed workouts. Each 🏀 represents one session. Players earn one raffle ticket for every three workouts, shown beside their name.")
 st.caption("Milestone badges unlock at 5, 10, and 15 sessions. Players whose families did not opt in to public display still count toward grade and community totals and remain eligible for the drawing.")
 for row_start in (0, 3):
     cols = st.columns(3, gap="medium")
