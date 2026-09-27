@@ -260,8 +260,34 @@ for row_start in (0, 3):
 
 st.markdown('<div class="section-heading">Community activity by day</div>', unsafe_allow_html=True)
 if not data.empty:
-    daily_counts = data.groupby("session_date").size().sort_index().to_frame("Workouts")
-    st.line_chart(daily_counts, x_label="Date", y_label="Completed workouts", color="#c8202f", height=300)
+    daily_counts = data.groupby("session_date").size().sort_index()
+    values = daily_counts.astype(int).tolist()
+    dates = [day.strftime("%b %d").replace(" 0", " ") for day in daily_counts.index]
+    chart_width, chart_height = 800, 300
+    left, right, top, bottom = 48, 18, 22, 42
+    plot_width = chart_width - left - right
+    plot_height = chart_height - top - bottom
+    max_value = max(values) if values else 1
+    points = [
+        (left + (plot_width * i / max(len(values) - 1, 1)), top + plot_height * (1 - value / max_value))
+        for i, value in enumerate(values)
+    ]
+    path = " ".join(("M" if i == 0 else "L") + f"{x:.1f},{y:.1f}" for i, (x, y) in enumerate(points))
+    circles = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="#c8202f" />' for x, y in points)
+    labels = "".join(
+        f'<text x="{x:.1f}" y="{chart_height - 12}" text-anchor="middle" font-size="13" fill="#252831">{dates[i]}</text>'
+        for i, (x, _) in enumerate(points)
+    )
+    chart = (
+        f'<div style="background:#fff;border:1px solid #e2e5ea;border-radius:12px;padding:10px">'
+        f'<svg viewBox="0 0 {chart_width} {chart_height}" role="img" aria-label="Daily completed workouts line graph" style="width:100%;height:auto">'
+        f'<text x="8" y="18" font-size="12" fill="#252831">{max_value}</text>'
+        f'<text x="8" y="{top + plot_height}" font-size="12" fill="#252831">0</text>'
+        f'<line x1="{left}" y1="{top + plot_height}" x2="{chart_width - right}" y2="{top + plot_height}" stroke="#9da3ad" />'
+        f'<path d="{path}" fill="none" stroke="#c8202f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />'
+        f'{circles}{labels}</svg></div>'
+    )
+    st.markdown(chart, unsafe_allow_html=True)
 else:
     st.info("Daily workout activity will appear here after the first session is logged.")
 st.caption("Dashboard refreshes from the published sheet about every 30 seconds. For a public display, use player nicknames or first name plus last initial and collect parent consent.")
