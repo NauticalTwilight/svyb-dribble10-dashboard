@@ -173,9 +173,9 @@ html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
 .badge-trophy { background:#e9f0ff; color:#244a9a; }
 .stMetric { background:white; border:1px solid #e4e6eb; border-radius:14px; padding:12px; }
 .community-ladder { display:flex; flex-wrap:wrap; gap:6px; margin:5px 0 10px; }
-.mile { border-radius:14px; padding:5px 9px; font-size:.77rem; font-weight:900; color:#545b66; background:#e3e6ec; }
+.mile { border-radius:14px; padding:5px 9px; font-size:.77rem; font-weight:900; color:#473600; background:#ffdc55; }
 .mile.hit { color:#fff; background:#187143; }
-.mile.next { color:#fff; background:#187143; box-shadow:0 0 0 2px #ffc928; }
+.mile.next { color:#473600; background:#ffdc55; }
 @media(max-width:760px) { .hero h1 {font-size:1.8rem;} .player-name {font-size:.86rem;} .session-count {font-size:.65rem;} }
 </style>
 """, unsafe_allow_html=True)
