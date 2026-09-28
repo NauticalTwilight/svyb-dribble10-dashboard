@@ -175,7 +175,7 @@ html, body, [class*="css"] { font-family: 'Nunito', sans-serif; }
 .community-ladder { display:flex; flex-wrap:wrap; gap:6px; margin:5px 0 10px; }
 .mile { border-radius:14px; padding:5px 9px; font-size:.77rem; font-weight:900; color:#545b66; background:#e3e6ec; }
 .mile.hit { color:#fff; background:#187143; }
-.mile.next { color:#fff; background:#c8202f; box-shadow:0 0 0 2px #ffc928; }
+.mile.next { color:#fff; background:#187143; box-shadow:0 0 0 2px #ffc928; }
 @media(max-width:760px) { .hero h1 {font-size:1.8rem;} .player-name {font-size:.86rem;} .session-count {font-size:.65rem;} }
 </style>
 """, unsafe_allow_html=True)
@@ -185,6 +185,7 @@ st.markdown('<div class="hero"><h1>🏀 SVYB DRIBBLE 10</h1><p>Every session cou
 workout_pdf_path = Path(__file__).with_name("svyb_dribble10_week1_handle_basics.pdf")
 st.markdown('<div class="section-heading">🏀 Start this week’s workout</div>', unsafe_allow_html=True)
 st.caption("Week 1: Handle Basics. Download the one-page guide with the 10-minute timer plan and all nine drills.")
+st.caption("The next workout will be posted next week!")
 st.download_button(
     label="Download Week 1 Workout (PDF)",
     data=workout_pdf_path.read_bytes(),
@@ -233,7 +234,7 @@ progress = min(sessions / COMMUNITY_GOAL, 1.0)
 st.markdown(f'<div class="section-heading">SVYB community goal <span style="color:#c8202f">{sessions:,} / {COMMUNITY_GOAL:,} workouts</span></div>', unsafe_allow_html=True)
 st.progress(progress, text=f"{progress:.0%} of the way to {COMMUNITY_GOAL:,} workouts")
 next_milestone = min(((sessions // 100) + 1) * 100, COMMUNITY_GOAL)
-milestone_note = "🎉 1,000-workout goal reached!" if sessions >= COMMUNITY_GOAL else f"Next team milestone: {next_milestone:,} workouts"
+milestone_note = "🎉 1,000-workout goal reached!" if sessions >= COMMUNITY_GOAL else f"Next SVYB milestone: {next_milestone:,} workouts"
 st.markdown(f"**{milestone_note}**", unsafe_allow_html=False)
 milestone_html = []
 for milestone in range(100, COMMUNITY_GOAL + 1, 100):
